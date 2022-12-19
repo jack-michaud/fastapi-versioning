@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Tuple, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -31,6 +31,9 @@ def VersionedFastAPI(
     prefix_format: str = "/v{major}_{minor}",
     default_version: Tuple[int, int] = (1, 0),
     enable_latest: bool = False,
+    modify_versioned_app: Optional[
+        Callable[[Tuple[int, int], FastAPI], FastAPI]
+    ] = None,
     **kwargs: Any,
 ) -> FastAPI:
     parent_app = FastAPI(
@@ -63,6 +66,10 @@ def VersionedFastAPI(
                 unique_routes[route.path + "|" + method] = route
         for route in unique_routes.values():
             versioned_app.router.routes.append(route)
+
+        if modify_versioned_app:
+            app = modify_versioned_app(version, app)
+
         parent_app.mount(prefix, versioned_app)
 
         @parent_app.get(
