@@ -68,7 +68,7 @@ def VersionedFastAPI(
             versioned_app.router.routes.append(route)
 
         if modify_versioned_app:
-            app = modify_versioned_app(version, app)
+            versioned_app = modify_versioned_app(version, versioned_app)
 
         parent_app.mount(prefix, versioned_app)
 
