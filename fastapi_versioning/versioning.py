@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, cast
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute
 from starlette.routing import BaseRoute
 
@@ -31,9 +31,6 @@ def VersionedFastAPI(
     prefix_format: str = "/v{major}_{minor}",
     default_version: Tuple[int, int] = (1, 0),
     enable_latest: bool = False,
-    modify_versioned_app: Optional[
-        Callable[[Tuple[int, int], FastAPI], FastAPI]
-    ] = None,
     **kwargs: Any,
 ) -> FastAPI:
     parent_app = FastAPI(
@@ -56,21 +53,14 @@ def VersionedFastAPI(
         major, minor = version
         prefix = prefix_format.format(major=major, minor=minor)
         semver = version_format.format(major=major, minor=minor)
-        versioned_app = FastAPI(
-            title=app.title,
-            description=app.description,
-            version=semver,
-        )
         for route in version_route_mapping[version]:
             for method in route.methods:
                 unique_routes[route.path + "|" + method] = route
-        for route in unique_routes.values():
-            versioned_app.router.routes.append(route)
 
-        if modify_versioned_app:
-            versioned_app = modify_versioned_app(version, versioned_app)
-
-        parent_app.mount(prefix, versioned_app)
+        versioned_router = APIRouter(
+            routes=[route for route in unique_routes.values()]
+        )
+        parent_app.include_router(versioned_router, prefix=prefix)
 
         @parent_app.get(
             f"{prefix}/openapi.json", name=semver, tags=["Versions"]

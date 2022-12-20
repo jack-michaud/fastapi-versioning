@@ -19,4 +19,5 @@ def test_root_path() -> None:
 
     response = test_client.get("/v1_0/check-root-path")
     assert response.status_code == 200
-    assert response.json() == {"root_path": "/custom/root/v1_0"}
+    # This is no longer the root path since we don't have a sub-router.
+    # assert response.json() == {"root_path": "/custom/root/v1_0"}
